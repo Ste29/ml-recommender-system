@@ -57,13 +57,16 @@ def contents_based_recommender(movie_user_likes, sim_matrix, movies, how_many):
 
 
 # Content-based
-def tfidf_content_based(movies, title, num_recommendation):
+def tfidf_content_based(movies, col, title, num_recommendation):
     # create an object for TfidfVectorizer
     tfidf_vector = TfidfVectorizer(stop_words='english')
+    # min_df: the vocabulary ignore terms that have a document frequency strictly lower than threshold. default=1
+    # tfidf = TfidfVectorizer(ngram_range=(0, 1), min_df=0.0001, stop_words='english')
     # apply the object to the genres column, 1 row per movie, 1 column per genre
-    tfidf_matrix = tfidf_vector.fit_transform(movies['genres'])
+    tfidf_matrix = tfidf_vector.fit_transform(movies[col])
     # in output restituisce una matrice delle similarità, sulla diagonale è max perché ovviamente la similarità di un
     # un elemento con se stesso è 100%, è la proiezione di un vettore sull'altro
     sim_matrix = linear_kernel(tfidf_matrix, tfidf_matrix)
     film_simili = contents_based_recommender(title, sim_matrix, movies, num_recommendation)
-    return film_simili
+    # tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), index=movies.index.tolist())
+    return film_simili, tfidf_matrix

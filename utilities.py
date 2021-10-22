@@ -2,6 +2,7 @@ import pandas as pd
 import os
 from collections import deque
 import numpy as np
+import random
 
 
 def filterMovies(df, min_movie_ratings=10000, min_user_ratings=200):
@@ -22,14 +23,24 @@ def filterMovies(df, min_movie_ratings=10000, min_user_ratings=200):
     return df_filtered
 
 
-def splitTrainTest(df, n=100000):
-    # Shuffle DataFrame, n=testingsize
-    df = df.drop('Date', axis=1).sample(frac=1).reset_index(drop=True)
+def splitRatingTrainTest(df, perc=80):
+    """Split dataset based on ratings"""
+    n = df.shape[0] // 100 * perc
+    arr = list(range(0, df.shape[0]))
+    np.random.shuffle(arr)
+    train = df.iloc[arr[:n]]
+    test = df.iloc[arr[n:]]
+    return train, test
 
-    # Split train- & testset
-    df_train = df[:-n]
-    df_test = df[-n:]
-    return df_train, df_test
+
+def splitUserTrainTest(df, perc=80):
+    """Split dataset based on users"""
+    n = df["userId"].unique().shape[0] // 100 * perc
+    arr = df["userId"].unique()
+    np.random.shuffle(arr)
+    train = df[df["userId"].isin(arr[:n])]
+    test = df[df["userId"].isin(arr[n:])]
+    return train, test
 
 
 def extract_title(title):
@@ -42,8 +53,8 @@ def extract_title(title):
         return title
 
 
-# the function to extract years
 def extract_year(title):
+    """Extract year of publication in MovieLens dataset"""
     year = title[len(title) - 5:len(title) - 1]
     # some movies do not have the info about year in the column title. So, we should take care of the case as well.
     if year.isnumeric():
@@ -54,7 +65,7 @@ def extract_year(title):
 
 def openSet(root, file):  # todo: finire la funzione per aprire i diversi set (netflix movies + TheMovieDataset)
     if file.endswith("csv"):
-        df = pd.read_csv(os.path.join(root, file))
+        df = pd.read_csv(os.path.join(root, file), index_col=False)
         if "rating" in file:
             df.timestamp = pd.to_datetime(df.timestamp, unit="s")
             df.rename(columns={"timestamp": "date"}, inplace=True)
@@ -68,10 +79,13 @@ def openSet(root, file):  # todo: finire la funzione per aprire i diversi set (n
             df['title'] = df['title_year'].apply(extract_title)
             df['year'] = df['title_year'].apply(extract_year)
             df['year'] = df["year"].astype(pd.Int32Dtype())
+        elif "tags" in file:
+            df.timestamp = pd.to_datetime(df.timestamp, unit="s")
+            df.rename(columns={"timestamp": "date"}, inplace=True)
     else:  # netflix dataset
         # Load single data-file
         df = pd.read_csv(os.path.join(root, file), header=None,
-                         names=['userId', 'rating', 'date'], usecols=[0, 1, 2])
+                         names=['userId', 'rating', 'date'], usecols=[0, 1, 2], index_col=False)
 
         # Find empty rows to slice dataframe for each movie
         tmp_movies = df[df['rating'].isna()]['userId'].reset_index()
