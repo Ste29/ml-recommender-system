@@ -49,6 +49,7 @@ def movieAnalysis(movies, verbose):
         # plt.rcParams["axes.grid.axis"] = "x"
         # plt.rcParams["axes.grid"] = True
         if verbose:
+            plt.figure(figsize=(10, 6), dpi=100)
             plt.grid(axis="y", zorder=0)
             plt.bar(list(counts.keys()), counts.values(), color='#db0000', zorder=3)
             plt.xticks(rotation=45)
@@ -94,8 +95,19 @@ def ratingAnalysis(ratings, verbose):
     # Distribuzione dei voti (stelline per film)
     data = ratings['rating'].value_counts().sort_index()  #ascending=False)
     if verbose:
+        plt.figure(figsize=(9, 6), dpi=100)
         plt.grid(axis="y", zorder=0)
-        plt.bar(data.index, data.values, color='#db0000', zorder=3)
+        plt.bar(list(map(str, data.index.to_list())), data.values, color='#db0000', zorder=3)  # data.index
+        plt.title(f"Distribution Of {ratings.shape[0]} Ratings")
+        plt.xlabel('Rating')
+        plt.ylabel('Counts')
+        for i, v in enumerate(data):
+            plt.text(i - .3, v + 300, '{:.1f} %'.format(v * 100 / len(ratings["movieId"])))
+        plt.show()
+
+        data = ratings['rating'].astype(int).value_counts().sort_index()
+        plt.grid(axis="y", zorder=0)
+        plt.bar(data.index, data.values, color='#db0000', zorder=3)  # data.index
         plt.title(f"Distribution Of {ratings.shape[0]} Ratings")
         plt.xlabel('Rating')
         plt.ylabel('Counts')

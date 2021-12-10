@@ -1,6 +1,11 @@
+import numpy as np
+import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 from fuzzywuzzy import fuzz
+from autoencoder import AutoEncoder
+import matplotlib.pyplot as plt
+import pickle
 
 
 # create a function to find the closest title
@@ -34,6 +39,7 @@ def find_closest_title(title, movies):
 
 
 def contents_based_recommender(movie_user_likes, sim_matrix, movies, how_many):
+    """Recommending movies starting from 1 title"""
     # primo step: cerco se l'utente ha scritto male il titolo
     closest_title, distance_score = find_closest_title(movie_user_likes, movies)
     film_simili = []
@@ -67,6 +73,49 @@ def tfidf_content_based(movies, col, title, num_recommendation):
     # in output restituisce una matrice delle similarità, sulla diagonale è max perché ovviamente la similarità di un
     # un elemento con se stesso è 100%, è la proiezione di un vettore sull'altro
     sim_matrix = linear_kernel(tfidf_matrix, tfidf_matrix)
+    # sim_model_cont = SimilarityPredictions(df_p_imputed, similarity_metric="cosine")  # todo: cosa cambia con cosine similarity?
+    # dal cosine tira anche fuori per lo stesso film i più simili e plottali Cosine TFIDF Description Similarity
     film_simili = contents_based_recommender(title, sim_matrix, movies, num_recommendation)
     # tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), index=movies.index.tolist())
     return film_simili, tfidf_matrix
+
+
+def indDist(tfidf_matrix, number_neighbors=6):
+    sim_matrix = linear_kernel(tfidf_matrix, tfidf_matrix)
+    # indices = pd.DataFrame(map(lambda x: x[::-1][:number_neighbors], sim_matrix.argsort(axis=1)))
+    # distances = pd.DataFrame(map(lambda x, y: x[y], sim_matrix, indices.to_numpy()))
+    indices = np.array(list(map(lambda x: x[::-1][:number_neighbors], sim_matrix.argsort(axis=1))))
+    distances = np.array(list(map(lambda x, y: x[y], sim_matrix, indices)))
+    return indices, distances
+
+
+def similarityIndDist(sim_model_cont, number_neighbors=6):
+    indices = []
+    distances = []
+    for ind in sim_model_cont.similarity_matrix.index:
+        cont_output = pd.DataFrame(sim_model_cont.predict_similar_items(seed_item=ind, n=number_neighbors))
+        indices.append(cont_output["item_id"].to_list())
+        distances.append(cont_output["similarity_score"].to_list())
+    return np.array(indices), np.array(distances)
+
+
+def traiAutoencoder(tfidf_matrix, movies):
+    tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), index=movies.index.tolist())
+
+    ae = AutoEncoder(tfidf_df, validation_perc=0.1, lr=1e-3, intermediate_size=700, encoded_size=70)
+    ae.train_loop(epochs=50)
+    losses = pd.DataFrame(data=list(zip(ae.train_losses, ae.val_losses)),
+                          columns=['train_loss', 'validation_loss'])
+    losses['epoch'] = (losses.index + 1) / 3
+    fig, ax = plt.subplots()
+    ax.plot(losses['epoch'], losses['train_loss'])
+    ax.plot(losses['epoch'], losses['validation_loss'])
+    ax.set_ylabel('MSE loss')
+    ax.set_xlabel('epoch')
+    ax.set_title('autoencoder loss over time')
+    ax.legend()
+    encoded = ae.get_encoded_representations()  # ora vanno decodificati e usati
+
+    with open('data/autoencoder_embeddings.pkl', 'wb') as fh:
+        pickle.dump(encoded, fh)
+    return encoded
