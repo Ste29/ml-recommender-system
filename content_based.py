@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 from fuzzywuzzy import fuzz
-from autoencoder import AutoEncoder
+# from autoencoder import AutoEncoder
 import matplotlib.pyplot as plt
 import pickle
 

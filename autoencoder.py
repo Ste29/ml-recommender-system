@@ -1,13 +1,13 @@
-import torch
+# import torch
 
 # assert torch.__version__ == '0.4.1.post2', 'need pytorch 0.4.1'
 import numpy as np
 import pandas as pd
 import pickle
 import multiprocessing
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+# import torch.nn as nn
+# import torch.optim as optim
+# from torch.utils.data import Dataset, DataLoader
 
 
 def get_cv_idxs(n, cv_idx=0, val_pct=0.2, seed=42):
