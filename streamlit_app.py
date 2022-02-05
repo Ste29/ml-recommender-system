@@ -94,7 +94,3 @@ elif menu_relations == "Movies Space Disposition":
 
     # st.write(fig)
     st.plotly_chart(fig, use_container_width=True)
-
-
-
-
